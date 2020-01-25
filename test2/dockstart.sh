@@ -50,11 +50,70 @@ done
 port=7051
 for org in $orgs; do
 	docker exec \
-	-e "CORE_PEER_LOCALMSPID=${org}" \
-	-e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
-	-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
-	cli peer channel update -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/${org}anchors.tx
+		-e "CORE_PEER_LOCALMSPID=${org}" \
+		-e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
+		-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
+		cli peer channel update -o orderer.example.com:7050 -c $CHANNEL_NAME -f ./channel-artifacts/${org}anchors.tx
 	let "port = $port + 2000"
 	echo "================= Anchor peers updated for org '$org' on channel '$CHANNEL_NAME' ================= "
 done
 
+
+# install chaincode on peer0.airport, peer0.ccd, peer0.users
+port=7051
+for org in $orgs; do
+	docker exec \
+		-e "CORE_PEER_LOCALMSPID=${org}" \
+		-e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
+		-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
+		cli peer chaincode install \
+			-n testcontract \
+			-v 1.0 \
+			-l node \
+			-p /opt/gopath/src/github.com/chaincode/testContract/
+	let "port = $port + 2000"
+	echo "=============== Chaincode is installed on peer0.${org} =============== "
+done
+
+# Instantiating smart contract
+echo "Instantiating smart contract on mychannel"
+docker exec \
+  -e CORE_PEER_LOCALMSPID=airport \
+  -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
+  cli \
+  peer chaincode instantiate \
+    -o orderer.example.com:7050 \
+    -C mychannel \
+    -n testcontract \
+    -l node \
+    -v 1.0 \
+    -c '{"Args":[]}' \
+    -P "AND('airport.member','ccd.member','users.member')" \
+    --peerAddresses peer0.airport.example.com:7051
+
+echo "Waiting for instantiation request to be committed ..."
+sleep 10
+
+echo "Submitting initLedger transaction to smart contract on mychannel"
+docker exec \
+  -e CORE_PEER_LOCALMSPID=airport \
+  -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
+  cli \
+  peer chaincode invoke \
+    -o orderer.example.com:7050 \
+    -C mychannel \
+    -n testcontract \
+    -c '{"function":"initLedger","Args":[]}' \
+    --waitForEvent \
+    --peerAddresses peer0.airport.example.com:7051 \
+    --peerAddresses peer0.ccd.example.com:9051 \
+    --peerAddresses peer0.users.example.com:11051
+
+
+# Querying Ledger
+echo "Querying smart contract on mychannel"
+docker exec \
+  -e CORE_PEER_LOCALMSPID=airport \
+  -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
+  cli \
+  peer chaincode query -C mychannel -n testcontract -c '{"Args":["queryAllPersons"]}'
