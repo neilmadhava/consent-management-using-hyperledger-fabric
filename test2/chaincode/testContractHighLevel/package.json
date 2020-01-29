@@ -1,14 +1,13 @@
 {
-  "name": "testcontract",
+  "name": "testcontracthighlevel",
   "version": "1.0.0",
-  "description": "test contract for CloudUnisys",
+  "description": "implementing private data in consent management",
   "engines": {
     "node": ">=8",
     "npm": ">=5"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node test.js"
+    "test": "node test.js"
   },
   "author": "neil",
   "license": "ISC",
