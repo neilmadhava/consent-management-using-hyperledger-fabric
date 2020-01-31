@@ -47,7 +47,7 @@ var Chaincode = class {
       aadhar_id: args[4]
     };
 
-    await stub.putPrivateData("testCollection",args[0], Buffer.from(JSON.stringify(car)));
+    await stub.putPrivateData("testCollection", args[0], Buffer.from(JSON.stringify(car)));
     console.info('============= END : Create Person ===========');
   }
 
