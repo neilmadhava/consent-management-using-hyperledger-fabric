@@ -41,8 +41,8 @@ let Chaincode = class {
   // initPerson - create a new person
   // ===============================================
   async initPerson(stub, args, thisClass) {
-    if (args.length != 8) {
-      throw new Error('Incorrect number of arguments. Expecting 8');
+    if (args.length != 9) {
+      throw new Error('Incorrect number of arguments. Expecting 9');
     }
     // ==== Input sanitation ====
     console.info('--- start init person ---')
@@ -70,6 +70,12 @@ let Chaincode = class {
     if (args[7].lenth <= 0) {
       throw new Error('8th argument must be a non-empty string');
     }
+    if (args[8].lenth <= 0) {
+      throw new Error('9th argument must be a non-empty string');
+    }
+    if (args[8].toLowerCase() !== "low" && args[8].toLowerCase() !== "high" && args[8].toLowerCase() !== "medium"){
+      throw new Error('9th argument must be LOW / MEDIUM / HIGH');
+    }
 
     let userID = args[0];
     let source = args[1];
@@ -78,7 +84,8 @@ let Chaincode = class {
     let phone = args[4];
     let creditCard = args[5];
     let aadhar_id = args[6];
-    let email = args[7];
+    let email = args[7].toLowerCase();
+    let consent_type = args[8].toLowerCase();
 
     // ==== Check if person already exists ====
     let personState = await stub.getPrivateData("testCollection", userID);
@@ -86,32 +93,66 @@ let Chaincode = class {
       throw new Error('This person already exists: ' + userID);
     }
 
-    // ==== Create person object and marshal to JSON ====
+    // CREATING DATA DEFINITION FOR PUBLIC AND PRIVATE DATA
+
     let person = {};
-    person.docType = 'person';
-    person.userID = userID;
-    person.source = source;
-    person.name = name;
-    person.departDate = departDate;
-
-    // === Save person to state ===
-    await stub.putPrivateData("testCollection",userID, Buffer.from(JSON.stringify(person)));
-
-    // ==== Create personPrivate object and marshal to JSON ====
     let personPrivate = {};
-    personPrivate.docType = 'person';
-    personPrivate.phone = phone;
-    personPrivate.creditCard = creditCard;
-    personPrivate.aadhar_id = aadhar_id;
-    personPrivate.email = email;
 
-    await stub.putPrivateData("testCollectionPrivate",userID, Buffer.from(JSON.stringify(personPrivate)));
+    if (consent_type === "low"){
+      // ==== Create person object and marshal to JSON ====
+      person.userID = userID;
+      person.source = source;
+      person.departDate = departDate;
+      person.consent_type = consent_type;
+      
+      // ==== Create personPrivate object and marshal to JSON ====
+      personPrivate.name = name;
+      personPrivate.phone = phone;
+      personPrivate.creditCard = creditCard;
+      personPrivate.aadhar_id = aadhar_id;
+      personPrivate.email = email;
+    }
+    if (consent_type === "medium"){
+      // ==== Create person object and marshal to JSON ====
+      person.userID = userID;
+      person.source = source;
+      person.departDate = departDate;
+      person.name = name;
+      person.email = email;
+      person.consent_type = consent_type;
+
+      // ==== Create personPrivate object and marshal to JSON ====
+      personPrivate.phone = phone;
+      personPrivate.creditCard = creditCard;
+      personPrivate.aadhar_id = aadhar_id;
+    }
+    if (consent_type === "high"){
+      // ==== Create person object and marshal to JSON ====
+      person.userID = userID;
+      person.source = source;
+      person.departDate = departDate;
+      person.name = name;
+      person.email = email;
+      person.aadhar_id = aadhar_id;
+      person.phone = phone;
+      person.consent_type = consent_type;
+
+      // ==== Create personPrivate object and marshal to JSON ====
+      personPrivate.creditCard = creditCard; 
+    }
+
+
+    // === Save person to testCollection ===
+    await stub.putPrivateData("testCollection", userID, Buffer.from(JSON.stringify(person)));  
+    
+    // === Save personPrivate to testCollectionPrivate ===
+    await stub.putPrivateData("testCollectionPrivate", userID, Buffer.from(JSON.stringify(personPrivate)));
 
     console.info('- end init person');
   }
 
   // ===============================================
-  // readMarble - read a person from chaincode state
+  // readPerson - read a person from testCollection
   // ===============================================
   async readPerson(stub, args, thisClass) {
     if (args.length != 1) {
@@ -134,6 +175,9 @@ let Chaincode = class {
     return personAsbytes;
   }
 
+  // ============================================================
+  // readPrivatePerson - read a person from testCollectionPrivate
+  // ============================================================
   async readPrivatePerson(stub, args, thisClass) {
     if (args.length != 1) {
       throw new Error('Incorrect number of arguments. Expecting user_id of the person to query');
@@ -153,6 +197,133 @@ let Chaincode = class {
     console.log(privatePersonAsbytes.toString());
     console.info('=======================================');
     return privatePersonAsbytes;
+  }
+
+  // ===================================================
+  // deletePerson - delete a person from all collections
+  // ===================================================
+  async deletePerson(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting userID of the person to delete');
+    }
+    let userID = args[0];
+    if (!userID) {
+      throw new Error('person name must not be empty');
+    }
+
+    let valAsbytes = await stub.getPrivateData("testCollection", userID); //get the person from chaincode state
+    let jsonResp = {};
+    if (!valAsbytes) {
+      jsonResp.error = 'person does not exist';
+      throw new Error(jsonResp);
+    }
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollection", userID);
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollectionPrivate", userID);
+  }
+
+  async updateConsent(stub, args, thisClass) {
+    if (args.length < 2) {
+      throw new Error('Incorrect number of arguments. Expecting userID and consent_type')
+    }
+
+    let userID = args[0];
+    let new_consent_type = args[1].toLowerCase();
+    console.info('- start updateConsent ', userID, new_consent_type);
+
+    let personAsBytes = await stub.getPrivateData("testCollection", userID);
+    let personPrivateAsBytes = await stub.getPrivateData("testCollectionPrivate", userID);
+
+    if (!personAsBytes || !personAsBytes.toString()) {
+      throw new Error('person does not exist');
+    }
+
+    let personJSON = {};
+    try {
+      personJSON = JSON.parse(personAsbytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + userID;
+      throw new Error(jsonResp);
+    }
+    console.info(personJSON);
+
+    let personPrivateJSON = {};
+    try {
+      personPrivateJSON = JSON.parse(personPrivateAsBytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + userID;
+      throw new Error(jsonResp);
+    }
+    console.info(personPrivateJSON);
+
+    personJSON.consent_type = new_consent_type;
+    let mergedJSON = { ...personJSON, ...personPrivateJSON };
+
+    keys = Object.keys(mergedJSON);
+    for (let i = 0; i < keys.length; i++) {
+      if(keys[i] !== "userID" && keys[i] !== "source" && keys[i] !== "departDate" && 
+        keys[i] !== "consent_type" && keys[i] !== "name" && keys[i] !== "phone" && 
+        keys[i] !== "creditCard" && keys[i] !== "aadhar_id" && keys[i] !== "email") {
+        throw new Error("keys mismatch!");
+      }
+    }
+
+    let person = {};
+    let personPrivate = {};
+
+    if (consent_type === "low"){
+      // ==== Create person object and marshal to JSON ====
+      person.userID = mergedJSON.userID;
+      person.source = mergedJSON.source;
+      person.departDate = mergedJSON.departDate;
+      person.consent_type = mergedJSON.consent_type;
+      
+      // ==== Create personPrivate object and marshal to JSON ====
+      personPrivate.name = mergedJSON.name;
+      personPrivate.phone = mergedJSON.phone;
+      personPrivate.creditCard = mergedJSON.creditCard;
+      personPrivate.aadhar_id = mergedJSON.aadhar_id;
+      personPrivate.email = mergedJSON.email;
+    }
+    if (consent_type === "medium"){
+      // ==== Create person object and marshal to JSON ====
+      person.userID = mergedJSON.userID;
+      person.source = mergedJSON.source;
+      person.departDate = mergedJSON.departDate;
+      person.name = mergedJSON.name;
+      person.email = mergedJSON.email;
+      person.consent_type = mergedJSON.consent_type;
+
+      // ==== Create personPrivate object and marshal to JSON ====
+      personPrivate.phone = mergedJSON.phone;
+      personPrivate.creditCard = mergedJSON.creditCard;
+      personPrivate.aadhar_id = mergedJSON.aadhar_id;
+    }
+    if (consent_type === "high"){
+      // ==== Create person object and marshal to JSON ====
+      person.userID = mergedJSON.userID;
+      person.source = mergedJSON.source;
+      person.departDate = mergedJSON.departDate;
+      person.name = mergedJSON.name;
+      person.email = mergedJSON.email;
+      person.aadhar_id = mergedJSON.aadhar_id;
+      person.phone = mergedJSON.phone;
+      person.consent_type = mergedJSON.consent_type;
+
+      // ==== Create personPrivate object and marshal to JSON ====
+      personPrivate.creditCard = mergedJSON.creditCard; 
+    }
+
+    // === Save person to testCollection ===
+    await stub.putPrivateData("testCollection", userID, Buffer.from(JSON.stringify(person)));  
+    
+    // === Save personPrivate to testCollectionPrivate ===
+    await stub.putPrivateData("testCollectionPrivate", userID, Buffer.from(JSON.stringify(personPrivate)));
   }
 };
 

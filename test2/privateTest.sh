@@ -21,7 +21,7 @@ CHANNEL_NAME=mychannel
 
 # clean the keystore
 rm -rf ./hfc-key-store
-cd "$DIR"
+# cd "$DIR"
 docker-compose -f docker-compose-cli.yaml down
 docker-compose -f docker-compose-cli.yaml up -d orderer.example.com peer0.airport.example.com peer1.airport.example.com peer0.ccd.example.com peer1.ccd.example.com peer0.users.example.com peer1.users.example.com couchdb cli
 
@@ -77,7 +77,7 @@ for org in $orgs; do
 		-e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
 		-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
 		cli peer chaincode install \
-			-n chainp1_1 \
+			-n chainp1_8 \
 			-v 1.0 \
 			-l node \
 			-p /opt/gopath/src/github.com/chaincode/chain_person01/
@@ -94,7 +94,7 @@ done
   # peer chaincode instantiate \
   #   -o orderer.example.com:7050 \
   #   -C mychannel \
-  #   -n chainp1_1 \
+  #   -n chainp1_8 \
   #   -l node \
   #   -v 1.0 \
   #   -c '{"Args":["init"]}' \
@@ -115,8 +115,8 @@ done
   # peer chaincode invoke \
   # 	-o orderer.example.com:7050 \
   # 	-C mychannel \
-  # 	-n chainp1_1 \
-  # 	-c '{"function":"initPerson","Args":["user_01","Delhi","Mukunda","31-Jan-2020","8178637565", "card_01", "uid001", "mm@gmail.com"]}' \
+  # 	-n chainp1_8 \
+  # 	-c '{"function":"initPerson","Args":["user_01","Delhi","Mukunda","31-Jan-2020","8178637565", "card_01", "uid001", "mm@gmail.com", "high"]}' \
   # 	--peerAddresses peer0.airport.example.com:7051 \
   # 	--peerAddresses peer0.ccd.example.com:9051 \
   # 	--peerAddresses peer0.users.example.com:11051
@@ -128,7 +128,7 @@ done
 #   cli \
   # peer chaincode query \
   # 	-C mychannel \
-  # 	-n chainp1_1 \
+  # 	-n chainp1_8 \
   # 	-c '{"function":"readPerson","Args":["user_01"]}'
 
 # # Query Ledger Private
@@ -138,8 +138,35 @@ done
 #   cli \
   # peer chaincode query \
   # 	-C mychannel \
-  # 	-n chainp1_1 \
+  # 	-n chainp1_8 \
   # 	-c '{"function":"readPrivatePerson","Args":["user_01"]}'
 
 # CORE_PEER_LOCALMSPID=ccd
 # CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/users/Admin@ccd.example.com/msp
+
+# peer chaincode invoke \
+#   	-o orderer.example.com:7050 \
+#   	-C mychannel \
+#   	-n chainp1_8 \
+#   	-c '{"function":"initPerson","Args":["user_02","Bangalore","Basil","03-Feb-2020","9038735239", "card_02", "uid002", "bgp@ymail.com", "low"]}' \
+#   	--peerAddresses peer0.airport.example.com:7051 \
+#   	--peerAddresses peer0.ccd.example.com:9051 \
+#   	--peerAddresses peer0.users.example.com:11051
+
+# peer chaincode query \
+#   	-C mychannel \
+#   	-n chainp1_4 \
+#   	-c '{"function":"getPersonsByRange","Args":["user_01", "user_03"]}'
+
+# docker exec \
+#   -e CORE_PEER_LOCALMSPID=airport \
+#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
+#   cli \
+# peer chaincode invoke \
+#   	-o orderer.example.com:7050 \
+#   	-C mychannel \
+#   	-n chainp1_8 \
+#   	-c '{"function":"deletePerson","Args":["user_02"]}' \
+#   	--peerAddresses peer0.airport.example.com:7051 \
+#   	--peerAddresses peer0.ccd.example.com:9051 \
+#   	--peerAddresses peer0.users.example.com:11051
