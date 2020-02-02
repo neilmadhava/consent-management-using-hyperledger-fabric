@@ -25,16 +25,17 @@ def submitFunc():
         for i in range(0,8):
             val = entry[i].get()
             values[i] = str(val)
-            print(values[i])
+            # print(values[i])
             file.write(values[i]+"\n")
             entry[i].delete(0,END)
-        print(optionChoice.get())
+        # print(optionChoice.get())
         file.write(optionChoice.get()+"\n")
         file.write(" ")
         optionChoice.set('LOW')
         file.close()
+        r = os.popen('./scripts/initLedger.sh').read()
+        print(r)
         exit(0)
-
 
 
 

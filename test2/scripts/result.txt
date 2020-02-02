@@ -1,10 +1,10 @@
-user_01
-Delhi
-Mukunda
-20-Feb-2019
-9887765435
-cc_01
-uid_01
-mm@gmail.com
-HIGH
+user02
+Bangalore
+Madhava
+30-September-2019
+7797273201
+cc_02
+uid_02
+mm@ymaail.com
+MEDIUM
  
