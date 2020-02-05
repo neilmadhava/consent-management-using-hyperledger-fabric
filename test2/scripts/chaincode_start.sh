@@ -19,10 +19,10 @@ for org in $orgs; do
 		-e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
 		-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
 		cli peer chaincode install \
-			-n chainp1_8 \
+			-n chainv1_3 \
 			-v 1.0 \
 			-l node \
-			-p /opt/gopath/src/github.com/chaincode/chain_person01/
+			-p /opt/gopath/src/github.com/chaincode/chain_person/
 	let "port = $port + 2000"
 	echo "=============== Chaincode is installed on peer0.${org} =============== "
 done
@@ -36,13 +36,13 @@ docker exec \
   peer chaincode instantiate \
     -o orderer.example.com:7050 \
     -C mychannel \
-    -n chainp1_8 \
+    -n chainv1_3 \
     -l node \
     -v 1.0 \
     -c '{"Args":["init"]}' \
     -P "OR ('airport.member','ccd.member','users.member')" \
     --peerAddresses peer0.airport.example.com:7051 \
-    --collections-config /opt/gopath/src/github.com/chaincode/chain_person01/collections_config.json
+    --collections-config /opt/gopath/src/github.com/chaincode/chain_person/collections_config.json
 
 sleep 10
 echo "Chaincode Instantiated Successfully!"

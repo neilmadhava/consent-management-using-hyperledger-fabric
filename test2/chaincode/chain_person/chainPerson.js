@@ -41,8 +41,8 @@ let Chaincode = class {
   // initPerson - create a new person
   // ===============================================
   async initPerson(stub, args, thisClass) {
-    if (args.length != 4) {
-      throw new Error('Incorrect number of arguments. Expecting 4');
+    if (args.length != 9) {
+      throw new Error('Incorrect number of arguments. Expecting 9');
     }
     // ==== Input sanitation ====
     console.info('--- start init person ---')
@@ -58,53 +58,107 @@ let Chaincode = class {
     if (args[3].lenth <= 0) {
       throw new Error('4th argument must be a non-empty string');
     }
-    let aadhar_id = args[0];
-    let name = args[1];
-    let email = args[2].toLowerCase();
-    let phone = args[3];
-
-    // ==== Check if person already exists ====
-    let personState = await stub.getPrivateData("testCollection", aadhar_id);
-    if (personState.toString()) {
-      throw new Error('This person already exists: ' + aadhar_id);
+    if (args[4].lenth <= 0) {
+      throw new Error('5th argument must be a non-empty string');
+    }
+    if (args[5].lenth <= 0) {
+      throw new Error('6th argument must be a non-empty string');
+    }
+    if (args[6].lenth <= 0) {
+      throw new Error('7th argument must be a non-empty string');
+    }
+    if (args[7].lenth <= 0) {
+      throw new Error('8th argument must be a non-empty string');
+    }
+    if (args[8].lenth <= 0) {
+      throw new Error('9th argument must be a non-empty string');
+    }
+    if (args[8].toLowerCase() !== "low" && args[8].toLowerCase() !== "high" && args[8].toLowerCase() !== "medium"){
+      throw new Error('9th argument must be LOW / MEDIUM / HIGH');
     }
 
-    // ==== Create person object and marshal to JSON ====
-    let person = {};
-    person.docType = 'person';
-    person.aadhar_id = aadhar_id;
-    person.name = name;
-    person.email = email;
-    person.phone = phone;
+    let userID = args[0];
+    let source = args[1];
+    let name = args[2];
+    let departDate = args[3];
+    let phone = args[4];
+    let creditCard = args[5];
+    let aadhar_id = args[6];
+    let email = args[7].toLowerCase();
+    let consent_type = args[8].toLowerCase();
 
-    // === Save person to state ===
-    await stub.putPrivateData("testCollection",aadhar_id, Buffer.from(JSON.stringify(person)));
-    // let indexName = 'color~name'
-    // let colorNameIndexKey = await stub.createCompositeKey(indexName, [person.color, person.name]);
-    // console.info(colorNameIndexKey);
-    //  Save index entry to state. Only the key name is needed, no need to store a duplicate copy of the person.
-    //  Note - passing a 'nil' value will effectively delete the key from state, therefore we pass null character as value
-    // await stub.putState(colorNameIndexKey, Buffer.from('\u0000'));
-    // ==== Marble saved and indexed. Return success ====
+    // ==== Check if person already exists ====
+    let personState = await stub.getPrivateData("testCollection", userID);
+    if (personState.toString()) {
+      throw new Error('This person already exists: ' + userID);
+    }
+
+    // CREATING DATA DEFINITION FOR PUBLIC AND PRIVATE DATA
+
+    let person = {};
+    let personPrivate = {};
+
+    person.userID = userID;
+    person.source = source;
+    person.departDate = departDate;
+    person.consent_type = consent_type;
+    person.name = name;
+    person.phone = phone;
+    person.creditCard = creditCard;
+    person.aadhar_id = aadhar_id;
+    person.email = email;
+
+    if (consent_type === "low"){      
+      personPrivate.userID = userID;
+      personPrivate.source = source;
+      personPrivate.departDate = departDate;
+    }
+    if (consent_type === "medium"){
+      personPrivate.userID = userID;
+      personPrivate.source = source;
+      personPrivate.departDate = departDate;
+      personPrivate.name = name;
+      personPrivate.email = email;
+
+    }
+    if (consent_type === "high"){
+      // ==== Create person object and marshal to JSON ====
+      personPrivate.userID = userID;
+      personPrivate.source = source;
+      personPrivate.departDate = departDate;
+      personPrivate.name = name;
+      personPrivate.email = email;
+      personPrivate.phone = phone;
+      personPrivate.aadhar_id = aadhar_id;
+
+    }
+
+
+    // === Save person to testCollection ===
+    await stub.putPrivateData("testCollection", userID, Buffer.from(JSON.stringify(person)));  
+    
+    // === Save personPrivate to testCollectionPrivate ===
+    await stub.putPrivateData("testCollectionPrivate", userID, Buffer.from(JSON.stringify(personPrivate)));
+
     console.info('- end init person');
   }
 
   // ===============================================
-  // readMarble - read a person from chaincode state
+  // readPerson - read a person - for ccd
   // ===============================================
   async readPerson(stub, args, thisClass) {
     if (args.length != 1) {
-      throw new Error('Incorrect number of arguments. Expecting aadhar of the person to query');
+      throw new Error('Incorrect number of arguments. Expecting user_id of the person to query');
     }
 
-    let aadhar_id = args[0];
-    if (!aadhar_id) {
-      throw new Error(' aadhar id must not be empty');
+    let userID = args[0];
+    if (!userID) {
+      throw new Error(' user_id must not be empty');
     }
-    let personAsbytes = await stub.getPrivateData("testCollection",aadhar_id); //get the person from chaincode state
+    let personAsbytes = await stub.getPrivateData("testCollectionPrivate",userID); //get the person from chaincode state
     if (!personAsbytes.toString()) {
       let jsonResp = {};
-      jsonResp.Error = 'Person does not exist: ' + aadhar_id;
+      jsonResp.Error = 'Person does not exist: ' + userID;
       throw new Error(JSON.stringify(jsonResp));
     }
     console.info('=======================================');
@@ -112,6 +166,77 @@ let Chaincode = class {
     console.info('=======================================');
     return personAsbytes;
   }
+
+  // ============================================================
+  // readPrivatePerson - read a person - for airport & users
+  // ============================================================
+  async readPrivatePerson(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting user_id of the person to query');
+    }
+
+    let userID = args[0];
+    if (!userID) {
+      throw new Error(' user_id must not be empty');
+    }
+    let privatePersonAsbytes = await stub.getPrivateData("testCollection",userID); //get the person from chaincode state
+    if (!privatePersonAsbytes.toString()) {
+      let jsonResp = {};
+      jsonResp.Error = 'Person does not exist: ' + userID;
+      throw new Error(JSON.stringify(jsonResp));
+    }
+    console.info('=======================================');
+    console.log(privatePersonAsbytes.toString());
+    console.info('=======================================');
+    return privatePersonAsbytes;
+  }
+
+  // ===================================================
+  // deletePerson - delete a person from all collections
+  // ===================================================
+  async deletePerson(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting userID of the person to delete');
+    }
+    let userID = args[0];
+    if (!userID) {
+      throw new Error('userID must not be empty');
+    }
+
+    let valAsbytes = await stub.getPrivateData("testCollection", userID); //get the person from chaincode state
+    let jsonResp = {};
+    if (!valAsbytes) {
+      jsonResp.error = 'person does not exist';
+      throw new Error(jsonResp);
+    }
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollection", userID);
+  }
+
+  // ===================================================
+  // revokeConsent - delete a person from ccd collections
+  // ===================================================
+  async revokeConsent(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting userID of the person to delete');
+    }
+    let userID = args[0];
+    if (!userID) {
+      throw new Error('userID must not be empty');
+    }
+
+    let valAsbytes = await stub.getPrivateData("testCollectionPrivate", userID); //get the person from chaincode state
+    let jsonResp = {};
+    if (!valAsbytes) {
+      jsonResp.error = 'person does not exist';
+      throw new Error(jsonResp);
+    }
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollectionPrivate", userID);
+  }
+
 };
 
 shim.start(new Chaincode());

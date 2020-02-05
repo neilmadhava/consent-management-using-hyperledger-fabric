@@ -47,12 +47,11 @@ args="$(echo "$(echo $userID)", "$(echo $src)", "$(echo $name)", "$(echo $depart
 docker exec \
   -e CORE_PEER_LOCALMSPID=users \
   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp \
-  -e args="$(echo $args)" \
   cli \
   peer chaincode invoke \
   	-o orderer.example.com:7050 \
   	-C mychannel \
-  	-n chainp1_8 \
+  	-n chainv1_3 \
   	-c '{"function":"initPerson","Args":['"$(echo $args)"']}' \
   	--peerAddresses peer0.airport.example.com:7051 \
   	--peerAddresses peer0.ccd.example.com:9051 \

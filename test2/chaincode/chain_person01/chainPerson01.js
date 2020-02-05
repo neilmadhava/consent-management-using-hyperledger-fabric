@@ -208,7 +208,7 @@ let Chaincode = class {
     }
     let userID = args[0];
     if (!userID) {
-      throw new Error('person name must not be empty');
+      throw new Error('userID must not be empty');
     }
 
     let valAsbytes = await stub.getPrivateData("testCollection", userID); //get the person from chaincode state
@@ -223,6 +223,29 @@ let Chaincode = class {
 
     //remove the person from testCollection
     await stub.deletePrivateData("testCollectionPrivate", userID);
+  }
+
+  // ===================================================
+  // revokeConsent - delete a person from ccd collections
+  // ===================================================
+  async revokeConsent(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting userID of the person to delete');
+    }
+    let userID = args[0];
+    if (!userID) {
+      throw new Error('userID must not be empty');
+    }
+
+    let valAsbytes = await stub.getPrivateData("testCollection", userID); //get the person from chaincode state
+    let jsonResp = {};
+    if (!valAsbytes) {
+      jsonResp.error = 'person does not exist';
+      throw new Error(jsonResp);
+    }
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollection", userID);
   }
 
   async updateConsent(stub, args, thisClass) {

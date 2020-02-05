@@ -77,30 +77,30 @@ for org in $orgs; do
 		-e "CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
 		-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
 		cli peer chaincode install \
-			-n chainp1_9 \
+			-n chainv1_3 \
 			-v 1.0 \
 			-l node \
-			-p /opt/gopath/src/github.com/chaincode/chain_person01/
+			-p /opt/gopath/src/github.com/chaincode/chain_person/
 	let "port = $port + 2000"
 	echo "=============== Chaincode is installed on peer0.${org} =============== "
 done
 
 # Instantiating smart contract
-# echo "Instantiating smart contract on mychannel"
-# docker exec \
-#   -e CORE_PEER_LOCALMSPID=airport \
-#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
-#   cli \
-#   peer chaincode instantiate \
-#     -o orderer.example.com:7050 \
-#     -C mychannel \
-#     -n chainp1_8 \
-#     -l node \
-#     -v 1.0 \
-#     -c '{"Args":["init"]}' \
-#     -P "OR ('airport.member','ccd.member','users.member')" \
-#     --peerAddresses peer0.airport.example.com:7051 \
-#     --collections-config /opt/gopath/src/github.com/chaincode/chain_person01/collections_config.json
+echo "Instantiating smart contract on mychannel"
+docker exec \
+  -e CORE_PEER_LOCALMSPID=airport \
+  -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
+  cli \
+  peer chaincode instantiate \
+    -o orderer.example.com:7050 \
+    -C mychannel \
+    -n chainv1_3 \
+    -l node \
+    -v 1.0 \
+    -c '{"Args":["init"]}' \
+    -P "OR ('airport.member','ccd.member','users.member')" \
+    --peerAddresses peer0.airport.example.com:7051 \
+    --collections-config /opt/gopath/src/github.com/chaincode/chain_person/collections_config.json
     
 
 # sleep 10
@@ -115,49 +115,42 @@ done
 #   peer chaincode invoke \
 #   	-o orderer.example.com:7050 \
 #   	-C mychannel \
-#   	-n chainp1_8 \
+#   	-n chainv1_3 \
 #   	-c '{"function":"initPerson","Args":["user_01","Delhi","Mukunda","31-Jan-2020","8178637565", "card_01", "uid001", "mm@gmail.com", "high"]}' \
 #   	--peerAddresses peer0.airport.example.com:7051 \
 #   	--peerAddresses peer0.ccd.example.com:9051 \
 #   	--peerAddresses peer0.users.example.com:11051
 
-# # Query Ledger
+# Query Ledger for ccd
 # docker exec \
 #   -e CORE_PEER_LOCALMSPID=airport \
 #   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
 #   cli \
   # peer chaincode query \
   # 	-C mychannel \
-  # 	-n chainp1_8 \
-  # 	-c '{"function":"readPerson","Args":["user02"]}'
+  # 	-n chainv1_3 \
+  # 	-c '{"function":"readPerson","Args":["user_02"]}'
 
-# # Query Ledger Private
+# # Query Ledger for airport and users
 # docker exec \
 #   -e CORE_PEER_LOCALMSPID=airport \
 #   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
 #   cli \
-#   peer chaincode query \
-#   	-C mychannel \
-#   	-n chainp1_8 \
-#   	-c '{"function":"readPrivatePerson","Args":["user_01"]}'
+  # peer chaincode query \
+  # 	-C mychannel \
+  # 	-n chainv1_3 \
+  # 	-c '{"function":"readPrivatePerson","Args":["user_02"]}'
 
-# CORE_PEER_LOCALMSPID=users
-# CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp
 
 # peer chaincode invoke \
 #   	-o orderer.example.com:7050 \
 #   	-C mychannel \
-#   	-n chainp1_8 \
+#   	-n chainv1_3 \
 #   	-c '{"function":"initPerson","Args":["user_02","Bangalore","Basil","03-Feb-2020","9038735239", "card_02", "uid002", "bgp@ymail.com", "low"]}' \
 #   	--peerAddresses peer0.airport.example.com:7051 \
 #   	--peerAddresses peer0.ccd.example.com:9051 \
 #   	--peerAddresses peer0.users.example.com:11051
 
-# peer chaincode query \
-#   	-C mychannel \
-#   	-n chainp1_4 \
-#   	-c '{"function":"getPersonsByRange","Args":["user_01", "user_03"]}'
-
 # docker exec \
 #   -e CORE_PEER_LOCALMSPID=airport \
 #   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
@@ -165,8 +158,31 @@ done
 # peer chaincode invoke \
 #   	-o orderer.example.com:7050 \
 #   	-C mychannel \
-#   	-n chainp1_8 \
-#   	-c '{"function":"deletePerson","Args":["user02"]}' \
+#   	-n chainv1_3 \
+#   	-c '{"function":"revokeConsent","Args":["user_02"]}' \
 #   	--peerAddresses peer0.airport.example.com:7051 \
 #   	--peerAddresses peer0.ccd.example.com:9051 \
 #   	--peerAddresses peer0.users.example.com:11051
+
+
+# peer chaincode invoke \
+#     -o orderer.example.com:7050 \
+#     -C mychannel \
+#     -n chainv1_3 \
+#     -c '{"function":"deletePerson","Args":["user_02"]}' \
+#     --peerAddresses peer0.airport.example.com:7051 \
+#     --peerAddresses peer0.users.example.com:11051
+
+# ENV VARIABLES
+
+# for airport
+# CORE_PEER_LOCALMSPID=airport
+# CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp
+
+# # for ccd
+# CORE_PEER_LOCALMSPID=ccd
+# CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/users/Admin@ccd.example.com/msp
+
+# # for users
+# CORE_PEER_LOCALMSPID=users
+# CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp

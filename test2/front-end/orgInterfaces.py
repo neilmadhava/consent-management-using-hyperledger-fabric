@@ -9,7 +9,7 @@ def QueryPublicStuff():
     print('Querying now ... please be patient')
     user = userType.get().lower()
     userId = entry.get()
-    print(user + " " + userId)
+    # print(user + " " + userId)
     r = os.popen('./scripts/query.sh 1 ' + user + ' ' + userId).read()
     print(r)
 
