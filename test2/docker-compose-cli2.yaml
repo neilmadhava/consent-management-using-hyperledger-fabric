@@ -27,6 +27,60 @@ services:
     networks:
       - consent
 
+  ca0:
+    image: hyperledger/fabric-ca
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-airport
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.airport.example.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/${CONSENT_CA1_PRIVATE_KEY}
+      - FABRIC_CA_SERVER_PORT=7054
+    ports:
+      - "7054:7054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.airport.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/${CONSENT_CA1_PRIVATE_KEY} -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/airport.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerAirport
+    networks:
+      - consent
+
+  ca1:
+    image: hyperledger/fabric-ca
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-ccd
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.ccd.example.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/${CONSENT_CA2_PRIVATE_KEY}
+      - FABRIC_CA_SERVER_PORT=8054
+    ports:
+      - "8054:8054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.ccd.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/${CONSENT_CA2_PRIVATE_KEY} -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/ccd.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerCCD
+    networks:
+      - consent
+
+  ca2:
+    image: hyperledger/fabric-ca
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca-users
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_TLS_CERTFILE=/etc/hyperledger/fabric-ca-server-config/ca.users.example.com-cert.pem
+      - FABRIC_CA_SERVER_TLS_KEYFILE=/etc/hyperledger/fabric-ca-server-config/${CONSENT_CA3_PRIVATE_KEY}
+      - FABRIC_CA_SERVER_PORT=9054
+    ports:
+      - "9054:9054"
+    command: sh -c 'fabric-ca-server start --ca.certfile /etc/hyperledger/fabric-ca-server-config/ca.users.example.com-cert.pem --ca.keyfile /etc/hyperledger/fabric-ca-server-config/${CONSENT_CA3_PRIVATE_KEY} -b admin:adminpw -d'
+    volumes:
+      - ./crypto-config/peerOrganizations/users.example.com/ca/:/etc/hyperledger/fabric-ca-server-config
+    container_name: ca_peerUsers
+    networks:
+      - consent
+
   peer0.airport.example.com:
     container_name: peer0.airport.example.com
     extends:
@@ -34,7 +88,6 @@ services:
       service: peer0.airport.example.com
     depends_on:
       - orderer.example.com
-      - couchdb
     networks:
       - consent
 
@@ -45,7 +98,6 @@ services:
       service: peer1.airport.example.com
     depends_on:
       - orderer.example.com
-      - couchdb
     networks:
       - consent
 
@@ -56,7 +108,6 @@ services:
       service: peer0.ccd.example.com
     depends_on:
       - orderer.example.com
-      - couchdb
     networks:
       - consent
 
@@ -67,7 +118,6 @@ services:
       service: peer1.ccd.example.com
     depends_on:
       - orderer.example.com
-      - couchdb
     networks:
       - consent
 
@@ -78,7 +128,6 @@ services:
       service: peer0.users.example.com
     depends_on:
       - orderer.example.com
-      - couchdb
     networks:
       - consent
 
@@ -89,22 +138,9 @@ services:
       service: peer1.users.example.com
     depends_on:
       - orderer.example.com
-      - couchdb
     networks:
       - consent
 
-  couchdb:
-    container_name: couchdb
-    image: hyperledger/fabric-couchdb
-    # Populate the COUCHDB_USER and COUCHDB_PASSWORD to set an admin user and password
-    # for CouchDB.  This will prevent CouchDB from operating in an "Admin Party" mode.
-    environment:
-      - COUCHDB_USER=
-      - COUCHDB_PASSWORD=
-    ports:
-      - 5984:5984
-    networks:
-      - consent
 
   cli:
     container_name: cli
@@ -141,6 +177,8 @@ services:
       - peer1.ccd.example.com
       - peer0.users.example.com
       - peer1.users.example.com
-      - couchdb
+      - ca0
+      - ca1
+      - ca2
     networks:
       - consent

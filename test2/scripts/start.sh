@@ -90,3 +90,5 @@ if [ "$?" -ne 0 ]; then
 	echo "Failed to generate anchor peer update for Airport..."
 	exit 1
 fi
+
+./scripts/ccp-generate.sh

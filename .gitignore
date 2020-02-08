@@ -1,1 +1,4 @@
 node_modules/
+wallet/
+channel-artifacts/
+crypto-config/

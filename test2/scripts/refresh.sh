@@ -1,6 +1,6 @@
 #!/bin/sh
 
-docker-compose -f docker-compose-cli.yaml down
+docker-compose -f docker-compose-cli2.yaml down
 
 # STOP AND DELETE THE DOCKER CONTAINERS
 docker ps -aq | xargs -n 1 docker stop

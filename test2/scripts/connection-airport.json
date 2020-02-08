@@ -1,0 +1,49 @@
+{
+    "name": "consent-airport",
+    "version": "1.0.0",
+    "client": {
+        "organization": "airport",
+        "connection": {
+            "timeout": {
+                "peer": {
+                    "endorser": "300"
+                }
+            }
+        }
+    },
+    "organizations": {
+        "airport": {
+            "mspid": "airport",
+            "peers": [
+                "peer0.airport.example.com"
+            ],
+            "certificateAuthorities": [
+                "ca.airport.example.com"
+            ]
+        }
+    },
+    "peers": {
+        "peer0.airport.example.com": {
+            "url": "grpcs://localhost:7051",
+            "tlsCACerts": {
+                "pem": "-----BEGIN CERTIFICATE-----\nMIICYzCCAgqgAwIBAgIRAKgCHNfUbbB2L3Nj8GPG5DQwCgYIKoZIzj0EAwIwfDEL\nMAkGA1UEBhMCVVMxEzARBgNVBAgTCkNhbGlmb3JuaWExFjAUBgNVBAcTDVNhbiBG\ncmFuY2lzY28xHDAaBgNVBAoTE2FpcnBvcnQuZXhhbXBsZS5jb20xIjAgBgNVBAMT\nGXRsc2NhLmFpcnBvcnQuZXhhbXBsZS5jb20wHhcNMjAwMjA4MTkyMDAwWhcNMzAw\nMjA1MTkyMDAwWjB8MQswCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEW\nMBQGA1UEBxMNU2FuIEZyYW5jaXNjbzEcMBoGA1UEChMTYWlycG9ydC5leGFtcGxl\nLmNvbTEiMCAGA1UEAxMZdGxzY2EuYWlycG9ydC5leGFtcGxlLmNvbTBZMBMGByqG\nSM49AgEGCCqGSM49AwEHA0IABP+5+TtP1KS0CoSingiRKC1hhux0Rpr/+GbVoepg\ncGE3Wt7xUUuDcbUeojWSTmbsXLalkJqxXoktIne9xhp/A0+jbTBrMA4GA1UdDwEB\n/wQEAwIBpjAdBgNVHSUEFjAUBggrBgEFBQcDAgYIKwYBBQUHAwEwDwYDVR0TAQH/\nBAUwAwEB/zApBgNVHQ4EIgQgZ1JA1Fv1+7+Z85mHkXOfXFgEar+VjfLfDCUpNpxw\nMk4wCgYIKoZIzj0EAwIDRwAwRAIgPcO3G7qOmreoJCKL/79Drw+QAdzx9Jib+JRH\nEB4URTICIE1kJ1h3dEzxWVTlQpYix+vdIx+ErZMSLIQ+molWbIFe\n-----END CERTIFICATE-----\n"
+            },
+            "grpcOptions": {
+                "ssl-target-name-override": "peer0.airport.example.com",
+                "hostnameOverride": "peer0.airport.example.com"
+            }
+        }
+    },
+    "certificateAuthorities": {
+        "ca.airport.example.com": {
+            "url": "https://localhost:7054",
+            "caName": "ca-airport",
+            "tlsCACerts": {
+                "pem": "-----BEGIN CERTIFICATE-----\nMIICXDCCAgOgAwIBAgIQX80Vxfwz3oyeIrTG+ri0ITAKBggqhkjOPQQDAjB5MQsw\nCQYDVQQGEwJVUzETMBEGA1UECBMKQ2FsaWZvcm5pYTEWMBQGA1UEBxMNU2FuIEZy\nYW5jaXNjbzEcMBoGA1UEChMTYWlycG9ydC5leGFtcGxlLmNvbTEfMB0GA1UEAxMW\nY2EuYWlycG9ydC5leGFtcGxlLmNvbTAeFw0yMDAyMDgxOTIwMDBaFw0zMDAyMDUx\nOTIwMDBaMHkxCzAJBgNVBAYTAlVTMRMwEQYDVQQIEwpDYWxpZm9ybmlhMRYwFAYD\nVQQHEw1TYW4gRnJhbmNpc2NvMRwwGgYDVQQKExNhaXJwb3J0LmV4YW1wbGUuY29t\nMR8wHQYDVQQDExZjYS5haXJwb3J0LmV4YW1wbGUuY29tMFkwEwYHKoZIzj0CAQYI\nKoZIzj0DAQcDQgAEqxkNMv3iruKd5Q2G1c+6scNU5b3RXtpkasV2xTksIUGSFwdQ\ncJUQZLX6Ok4i2lSx8Pwjl1ckrYaTnjPYHss9b6NtMGswDgYDVR0PAQH/BAQDAgGm\nMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcDATAPBgNVHRMBAf8EBTADAQH/\nMCkGA1UdDgQiBCCwg4KTtSZvtWIIkALj8A6IJ1BvCN6BqJDsCsME5iNXxjAKBggq\nhkjOPQQDAgNHADBEAiAsLr9aDEFP0hk/JVaRmrNkzll95od3BGDZnCcmDIPucAIg\nJxA8/60+Ql2sK73/dia8J5JX2I//RvnFL35Hxp7Pkrg=\n-----END CERTIFICATE-----\n"
+            },
+            "httpOptions": {
+                "verify": false
+            }
+        }
+    }
+}

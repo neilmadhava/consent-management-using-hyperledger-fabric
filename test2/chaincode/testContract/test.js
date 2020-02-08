@@ -4,28 +4,32 @@
 # SPDX-License-Identifier: Apache-2.0
 */
 
+'use strict';
 const shim = require('fabric-shim');
 const util = require('util');
 
-var Chaincode = class {
-
-  // Initialize the chaincode
+let Chaincode = class {
   async Init(stub) {
-    console.info('=========== Instantiated test chaincode ===========');
+    let ret = stub.getFunctionAndParameters();
+    console.info(ret);
+    console.info('=========== Instantiated Marbles Chaincode ===========');
     return shim.success();
   }
 
   async Invoke(stub) {
+    console.info('Transaction ID: ' + stub.getTxID());
+    console.info(util.format('Args: %j', stub.getArgs()));
+
     let ret = stub.getFunctionAndParameters();
     console.info(ret);
 
     let method = this[ret.fcn];
     if (!method) {
-      console.error('no function of name:' + ret.fcn + ' found');
+      console.log('no function of name:' + ret.fcn + ' found');
       throw new Error('Received unknown function ' + ret.fcn + ' invocation');
     }
     try {
-      let payload = await method(stub, ret.params);
+      let payload = await method(stub, ret.params, this);
       return shim.success(payload);
     } catch (err) {
       console.log(err);
@@ -33,98 +37,260 @@ var Chaincode = class {
     }
   }
 
-  async initLedger(stub, args) {
-    console.info('============= START : Initialize Ledger ===========');
-    let persons = [];
-    persons.push({
-      name: 'Mukunda',
-      email: 'mm@gmail.com',
-      phone: '8178669876',
-      aadhar_id: 'uid001'
-    });
-    persons.push({
-      name: 'Basil',
-      email: 'bgp@gmail.com',
-      phone: '9872389462',
-      aadhar_id: 'uid002'
-    });
-    persons.push({
-      name: 'Manavi',
-      email: 'ym@gmail.com',
-      phone: '8984393824',
-      aadhar_id: 'uid003'
-    });
-    persons.push({
-      name: 'Kunj',
-      email: 'kp@gmail.com',
-      phone: '8765436747',
-      aadhar_id: 'uid004'
-    });
-    persons.push({
-      name: 'Madhava',
-      email: 'nm@gmail.com',
-      phone: '8178665876',
-      aadhar_id: 'uid005'
-    });
-
-    for (let i = 0; i < persons.length; i++) {
-      persons[i].docType = 'person';
-      await stub.putState('PERSON' + i, Buffer.from(JSON.stringify(persons[i])));
-      console.info('Added <--> ', persons[i]);
+  // ===============================================
+  // initPerson - create a new person
+  // ===============================================
+  async initPerson(stub, args, thisClass) {
+    if (args.length != 9) {
+      throw new Error('Incorrect number of arguments. Expecting 9');
     }
-    console.info('============= END : Initialize Ledger ===========');
-  }
-
-  async createPerson(stub, args) {
-    console.info('============= START : Create Person ===========');
-    if (args.length != 5) {
-      throw new Error('Incorrect number of arguments. Expecting 5');
+    // ==== Input sanitation ====
+    console.info('--- start init person ---')
+    if (args[0].lenth <= 0) {
+      throw new Error('1st argument must be a non-empty string');
+    }
+    if (args[1].lenth <= 0) {
+      throw new Error('2nd argument must be a non-empty string');
+    }
+    if (args[2].lenth <= 0) {
+      throw new Error('3rd argument must be a non-empty string');
+    }
+    if (args[3].lenth <= 0) {
+      throw new Error('4th argument must be a non-empty string');
+    }
+    if (args[4].lenth <= 0) {
+      throw new Error('5th argument must be a non-empty string');
+    }
+    if (args[5].lenth <= 0) {
+      throw new Error('6th argument must be a non-empty string');
+    }
+    if (args[6].lenth <= 0) {
+      throw new Error('7th argument must be a non-empty string');
+    }
+    if (args[7].lenth <= 0) {
+      throw new Error('8th argument must be a non-empty string');
+    }
+    if (args[8].lenth <= 0) {
+      throw new Error('9th argument must be a non-empty string');
+    }
+    if (args[8].toLowerCase() !== "low" && args[8].toLowerCase() !== "high" && args[8].toLowerCase() !== "medium"){
+      throw new Error('9th argument must be LOW / MEDIUM / HIGH');
     }
 
-    var person = {
-      docType: 'person',
-      name: args[1],
-      email: args[2],
-      phone: args[3],
-      aadhar_id: args[4]
-    };
+    let userID = args[0];
+    let source = args[1];
+    let name = args[2];
+    let departDate = args[3];
+    let phone = args[4];
+    let creditCard = args[5];
+    let aadhar_id = args[6];
+    let email = args[7].toLowerCase();
+    let consent_type = args[8].toLowerCase();
 
-    await stub.putState(args[0], Buffer.from(JSON.stringify(car)));
-    console.info('============= END : Create Person ===========');
-  }
-
-  async queryAllPersons(stub, args) {
-
-    let startKey = 'PERSON0';
-    let endKey = 'PERSON999';
-
-    let iterator = await stub.getStateByRange(startKey, endKey);
-
-    let allResults = [];
-    while (true) {
-      let res = await iterator.next();
-
-      if (res.value && res.value.value.toString()) {
-        let jsonRes = {};
-        console.log(res.value.value.toString('utf8'));
-
-        jsonRes.Key = res.value.key;
-        try {
-          jsonRes.Record = JSON.parse(res.value.value.toString('utf8'));
-        } catch (err) {
-          console.log(err);
-          jsonRes.Record = res.value.value.toString('utf8');
-        }
-        allResults.push(jsonRes);
-      }
-      if (res.done) {
-        console.log('end of data');
-        await iterator.close();
-        console.info(allResults);
-        return Buffer.from(JSON.stringify(allResults));
-      }
+    // ==== Check if person already exists ====
+    let personState = await stub.getPrivateData("testCollection", userID);
+    if (personState.toString()) {
+      throw new Error('This person already exists: ' + userID);
     }
+
+    // CREATING DATA DEFINITION FOR PUBLIC AND PRIVATE DATA
+
+    let person = {};
+    let personPrivate = {};
+
+    person.userID = userID;
+    person.source = source;
+    person.departDate = departDate;
+    person.name = name;
+    person.phone = phone;
+    person.creditCard = creditCard;
+    person.aadhar_id = aadhar_id;
+    person.email = email;
+    person.consent_type = consent_type;
+
+    if (consent_type === "low"){      
+      personPrivate.userID = userID;
+      personPrivate.source = source;
+      personPrivate.departDate = departDate;
+    }
+    if (consent_type === "medium"){
+      personPrivate.userID = userID;
+      personPrivate.source = source;
+      personPrivate.departDate = departDate;
+      personPrivate.name = name;
+      personPrivate.email = email;
+
+    }
+    if (consent_type === "high"){
+      // ==== Create person object and marshal to JSON ====
+      personPrivate.userID = userID;
+      personPrivate.source = source;
+      personPrivate.departDate = departDate;
+      personPrivate.name = name;
+      personPrivate.email = email;
+      personPrivate.phone = phone;
+      personPrivate.aadhar_id = aadhar_id;
+
+    }
+
+
+    // === Save person to testCollection ===
+    await stub.putPrivateData("testCollection", userID, Buffer.from(JSON.stringify(person)));  
+    
+    // === Save personPrivate to testCollectionPrivate ===
+    await stub.putPrivateData("testCollectionPrivate", userID, Buffer.from(JSON.stringify(personPrivate)));
+
+    console.info('- end init person');
   }
+
+  // ===============================================
+  // readPerson - read a person - for ccd
+  // ===============================================
+  async readPerson(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting user_id of the person to query');
+    }
+
+    let userID = args[0];
+    if (!userID) {
+      throw new Error(' user_id must not be empty');
+    }
+    let personAsbytes = await stub.getPrivateData("testCollectionPrivate",userID); //get the person from chaincode state
+    if (!personAsbytes.toString()) {
+      let jsonResp = {};
+      jsonResp.Error = 'Person does not exist: ' + userID;
+      throw new Error(JSON.stringify(jsonResp));
+    }
+    console.info('=======================================');
+    console.log(personAsbytes.toString());
+    console.info('=======================================');
+    return personAsbytes;
+  }
+
+  // ============================================================
+  // readPrivatePerson - read a person - for airport & users
+  // ============================================================
+  async readPrivatePerson(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting user_id of the person to query');
+    }
+
+    let userID = args[0];
+    if (!userID) {
+      throw new Error(' user_id must not be empty');
+    }
+    let privatePersonAsbytes = await stub.getPrivateData("testCollection",userID); //get the person from chaincode state
+    if (!privatePersonAsbytes.toString()) {
+      let jsonResp = {};
+      jsonResp.Error = 'Person does not exist: ' + userID;
+      throw new Error(JSON.stringify(jsonResp));
+    }
+    console.info('=======================================');
+    console.log(privatePersonAsbytes.toString());
+    console.info('=======================================');
+    return privatePersonAsbytes;
+  }
+
+  // ===================================================
+  // deletePerson - delete a person from all collections
+  // ===================================================
+  async deletePerson(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting userID of the person to delete');
+    }
+    let userID = args[0];
+    if (!userID) {
+      throw new Error('userID must not be empty');
+    }
+
+    let valAsbytes = await stub.getPrivateData("testCollection", userID); //get the person from chaincode state
+    let jsonResp = {};
+    if (!valAsbytes) {
+      jsonResp.error = 'person does not exist';
+      throw new Error(jsonResp);
+    }
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollection", userID);
+  }
+
+  // ===================================================
+  // revokeConsent - delete a person from ccd collections
+  // ===================================================
+  async revokeConsent(stub, args, thisClass) {
+    if (args.length != 1) {
+      throw new Error('Incorrect number of arguments. Expecting userID of the person to delete');
+    }
+    let userID = args[0];
+    if (!userID) {
+      throw new Error('userID must not be empty');
+    }
+
+    let valAsbytes = await stub.getPrivateData("testCollectionPrivate", userID); //get the person from chaincode state
+    let jsonResp = {};
+    if (!valAsbytes) {
+      jsonResp.error = 'person does not exist';
+      throw new Error(jsonResp);
+    }
+
+    //remove the person from testCollection
+    await stub.deletePrivateData("testCollectionPrivate", userID);
+  }
+
+  // ===================================================
+  // updateConsent - add a person to ccd collections
+  // ===================================================
+  async updateConsent(stub, args, thisClass) {
+    if (args.length < 2) {
+      throw new Error('Incorrect number of arguments. Expecting userID and consent_type')
+    }
+
+    let userID = args[0];
+    let newConsent = args[1].toLowerCase(); //high/low/medium
+    console.info('- start transferMarble ', userID, newConsent);
+
+    let personAsBytes = await stub.getPrivateData("testCollection", userID);
+    if (!personAsBytes || !personAsBytes.toString()) {
+      throw new Error('person does not exist');
+    }
+
+    let updatedConsent = {};
+    try {
+      updatedConsent = JSON.parse(personAsBytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + userID;
+      throw new Error(jsonResp);
+    }
+    console.info(updatedConsent);
+    updatedConsent.consent_type = newConsent; //change the consent
+
+    //rewrite the person in testCollection
+    await stub.putPrivateData("testCollection", userID, Buffer.from(JSON.stringify(updatedConsent)));
+
+    let updatedConsentPrivate = updatedConsent;
+
+    delete updatedConsentPrivate.consent_type;
+    if(newConsent === "low"){
+      delete updatedConsentPrivate.name;
+      delete updatedConsentPrivate.phone;
+      delete updatedConsentPrivate.creditCard;
+      delete updatedConsentPrivate.aadhar_id;
+      delete updatedConsentPrivate.email;
+    }
+    if(newConsent === "medium"){
+      delete updatedConsentPrivate.phone;
+      delete updatedConsentPrivate.creditCard;
+      delete updatedConsentPrivate.aadhar_id;
+    }
+    if(newConsent === "high"){
+      delete updatedConsentPrivate.creditCard;
+    }
+
+    await stub.putPrivateData("testCollectionPrivate", userID, Buffer.from(JSON.stringify(updatedConsentPrivate)));
+    console.info('- end updateConsent (success)');
+  }
+
 };
 
 shim.start(new Chaincode());

@@ -57,7 +57,7 @@ entry[2] = Entry(mainframe)
 entry[2].grid(row = 2, column = 1)
 entry[2]['state'] = 'normal'
 
-label[3] = Label(mainframe, text = "Deaprture Date ")
+label[3] = Label(mainframe, text = "Departure Date ")
 label[3].grid(row = 3, column = 0)
 entry[3] = Entry(mainframe)
 entry[3].grid(row = 3, column = 1)
