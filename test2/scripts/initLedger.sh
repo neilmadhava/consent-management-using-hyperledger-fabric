@@ -3,6 +3,9 @@
  
 filename="./scripts/result.txt"
 i=0
+CONFIG_ROOT=/opt/gopath/src/github.com/hyperledger/fabric/peer
+ORDERER_CA=${CONFIG_ROOT}/crypto/ordererOrganizations/example.com/orderers/orderer.example.com/msp/tlscacerts/tlsca.example.com-cert.pem
+
 
 while read line
 do 
@@ -45,14 +48,32 @@ args="$(echo "$(echo $userID)", "$(echo $src)", "$(echo $name)", "$(echo $depart
 
 # Invoking Smart Contract
 docker exec \
-  -e CORE_PEER_LOCALMSPID=users \
-  -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp \
+  -e CORE_PEER_LOCALMSPID=airport \
+  -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
   cli \
   peer chaincode invoke \
-  	-o orderer.example.com:7050 \
-  	-C mychannel \
-  	-n chainv1_3 \
-  	-c '{"function":"initPerson","Args":['"$(echo $args)"']}' \
-  	--peerAddresses peer0.airport.example.com:7051 \
-  	--peerAddresses peer0.ccd.example.com:9051 \
-  	--peerAddresses peer0.users.example.com:11051
+    -o orderer.example.com:7050 \
+    -C mychannel \
+    -n chainv1_3 \
+    --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
+    -c '{"function":"initPerson","Args":['"$(echo $args)"']}' \
+    --peerAddresses peer0.airport.example.com:7051 \
+    --peerAddresses peer0.ccd.example.com:9051 \
+    --peerAddresses peer0.users.example.com:11051 \
+    --tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/ca.crt \
+    --tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/ca.crt \
+    --tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/ca.crt
+
+
+# docker exec \
+#   -e CORE_PEER_LOCALMSPID=users \
+#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp \
+#   cli \
+#   peer chaincode invoke \
+#   	-o orderer.example.com:7050 \
+#   	-C mychannel \
+#   	-n chainv1_3 \
+#   	-c '{"function":"initPerson","Args":['"$(echo $args)"']}' \
+#   	--peerAddresses peer0.airport.example.com:7051 \
+#   	--peerAddresses peer0.ccd.example.com:9051 \
+#   	--peerAddresses peer0.users.example.com:11051

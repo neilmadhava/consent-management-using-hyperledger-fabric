@@ -36,7 +36,7 @@ async function main() {
         const contract = network.getContract('chainv1_3');
 
         // Submit the specified transaction.
-        await contract.submitTransaction('initPerson', 'user_01', 'Delhi', 'Mukunda', '31-Jan-2020', '8178637565', 'card_01', 'uid001', 'mm@gmail.com', 'high');
+        await contract.submitTransaction('initPerson', 'user_01', 'Delhi', 'Mukunda', '31-Jan-2020', '8178637565', 'card_01', 'uid001', 'mm@gmail.com', 'medium');
         console.log('Transaction has been submitted');
 
         // Disconnect from the gateway.
