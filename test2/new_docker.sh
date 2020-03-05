@@ -16,7 +16,8 @@ export CONSENT_CA2_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/ccd.example.
 export CONSENT_CA3_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/users.example.com/ca && ls *_sk)
 
 docker-compose -f docker-compose-cli2.yaml down
-docker-compose -f docker-compose-cli2.yaml up -d orderer.example.com ca0 ca1 ca2 peer0.airport.example.com peer1.airport.example.com peer0.ccd.example.com peer1.ccd.example.com peer0.users.example.com peer1.users.example.com cli
+# docker-compose -f docker-compose-cli2.yaml up -d orderer.example.com ca0 ca1 ca2 peer0.airport.example.com peer1.airport.example.com peer0.ccd.example.com peer1.ccd.example.com peer0.users.example.com peer1.users.example.com cli
+docker-compose -f docker-compose-cli2.yaml up -d orderer.example.com ca0 ca1 ca2 peer0.airport.example.com peer0.ccd.example.com peer0.users.example.com cli
 
 # wait for Hyperledger Fabric to start
 # incase of errors when running later commands, issue export 
@@ -40,19 +41,32 @@ port=7051
 sleep $DELAY
 
 # Join peer of all organizations to the channel
+# for org in $orgs; do
+# 	for peer in 0 1; do
+# 		docker exec \
+# 			-e "CORE_PEER_LOCALMSPID=${org}" \
+# 			-e "CORE_PEER_MSPCONFIGPATH=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
+# 			-e "CORE_PEER_ADDRESS=peer${peer}.${org}.example.com:${port}" \
+# 			-e CORE_PEER_TLS_ROOTCERT_FILE=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/peers/peer${peer}.${org}.example.com/tls/ca.crt \
+# 			cli peer channel join -b mychannel.block
+# 		let "port = $port + 1000";
+# 		echo "=================== peer${peer}.${org} joined channel '$CHANNEL_NAME' =================== "
+# 		sleep $DELAY
+# 		echo
+# 	done
+# done
+
 for org in $orgs; do
-	for peer in 0 1; do
-		docker exec \
-			-e "CORE_PEER_LOCALMSPID=${org}" \
-			-e "CORE_PEER_MSPCONFIGPATH=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
-			-e "CORE_PEER_ADDRESS=peer${peer}.${org}.example.com:${port}" \
-			-e CORE_PEER_TLS_ROOTCERT_FILE=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/peers/peer${peer}.${org}.example.com/tls/ca.crt \
-			cli peer channel join -b mychannel.block
-		let "port = $port + 1000";
-		echo "=================== peer${peer}.${org} joined channel '$CHANNEL_NAME' =================== "
-		sleep $DELAY
-		echo
-	done
+	docker exec \
+		-e "CORE_PEER_LOCALMSPID=${org}" \
+		-e "CORE_PEER_MSPCONFIGPATH=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/users/Admin@${org}.example.com/msp" \
+		-e "CORE_PEER_ADDRESS=peer0.${org}.example.com:${port}" \
+		-e CORE_PEER_TLS_ROOTCERT_FILE=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/peers/peer0.${org}.example.com/tls/ca.crt \
+		cli peer channel join -b mychannel.block
+	let "port = $port + 2000";
+	echo "=================== peer0.${org} joined channel '$CHANNEL_NAME' =================== "
+	sleep $DELAY
+	echo
 done
 
 # Update anchor peers
@@ -83,7 +97,7 @@ for org in $orgs; do
 		-e CORE_PEER_TLS_ROOTCERT_FILE=${CONFIG_ROOT}/crypto/peerOrganizations/${org}.example.com/peers/peer0.${org}.example.com/tls/ca.crt \
 		cli \
 		peer chaincode install \
-			-n chainv1_3 \
+			-n testv7 \
 			-v 1.0 \
 			-l node \
 			-p /opt/gopath/src/github.com/chaincode/chain_person/
@@ -102,7 +116,7 @@ docker exec \
   peer chaincode instantiate \
     -o orderer.example.com:7050 \
     -C mychannel \
-    -n chainv1_3 \
+    -n testv7 \
     --tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
     -l node \
     -v 1.0 \
@@ -125,15 +139,11 @@ echo "Chaincode Instantiated!"
 #   peer chaincode invoke \
 #   	-o orderer.example.com:7050 \
 #   	-C mychannel \
-#   	-n chainv1_3 \
+#   	-n testv7 \
 #   	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
-#   	-c '{"function":"initPerson","Args":["user_01","Delhi","Mukunda","31-Jan-2020","8178637565", "card_01", "uid001", "mm@gmail.com", "high"]}' \
+#   	-c '{"function":"initPerson","Args":["user_01","Delhi","Mukunda","31-Jan-2020","8178637565", "card_01", "uid001", "mm@gmail.com", "medium"]}' \
 #   	--peerAddresses peer0.airport.example.com:7051 \
-#   	--peerAddresses peer0.ccd.example.com:9051 \
-#   	--peerAddresses peer0.users.example.com:11051 \
-#   	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/ca.crt \
-#   	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/ca.crt \
-#   	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/ca.crt
+#   	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/ca.crt
 
 # Query Ledger for ccd
 # docker exec \
@@ -143,7 +153,7 @@ echo "Chaincode Instantiated!"
 #   peer chaincode query \
 #   	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
 #   	-C mychannel \
-#   	-n chainv1_3 \
+#   	-n testv7 \
 #   	-c '{"function":"readPerson","Args":["user_01"]}'
 
 # # Query Ledger for airport and users
@@ -154,14 +164,14 @@ echo "Chaincode Instantiated!"
 #   peer chaincode query \
 #   	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
 #   	-C mychannel \
-#   	-n chainv1_3 \
+#   	-n testv7 \
 #   	-c '{"function":"readPrivatePerson","Args":["user_01"]}'
 
 
 # peer chaincode invoke \
 #   	-o orderer.example.com:7050 \
 #   	-C mychannel \
-#   	-n chainv1_3 \
+#   	-n testv7 \
 #   	-c '{"function":"initPerson","Args":["user_02","Bangalore","Basil","03-Feb-2020","9038735239", "card_02", "uid002", "bgp@ymail.com", "low"]}' \
 #   	--peerAddresses peer0.airport.example.com:7051 \
 #   	--peerAddresses peer0.ccd.example.com:9051 \
@@ -174,7 +184,7 @@ echo "Chaincode Instantiated!"
 # 	peer chaincode invoke \
 # 	  	-o orderer.example.com:7050 \
 # 	  	-C mychannel \
-# 	  	-n chainv1_3 \
+# 	  	-n testv7 \
 # 	  	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
 # 	  	-c '{"function":"revokeConsent","Args":["user_01"]}' \
 # 	  	--peerAddresses peer0.airport.example.com:7051 \
@@ -189,7 +199,7 @@ echo "Chaincode Instantiated!"
 # peer chaincode invoke \
 #     -o orderer.example.com:7050 \
 #     -C mychannel \
-#     -n chainv1_3 \
+#     -n testv7 \
 #     -c '{"function":"deletePerson","Args":["user_02"]}' \
 #     --peerAddresses peer0.airport.example.com:7051 \
 #     --peerAddresses peer0.users.example.com:11051
@@ -199,11 +209,80 @@ echo "Chaincode Instantiated!"
 # for airport
 # CORE_PEER_LOCALMSPID=airport
 # CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp
+# CORE_PEER_ADDRESS=peer0.airport.example.com:9051
+# CORE_PEER_TLS_ENABLED=true
+# CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/server.crt
+# CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/server.key
+# CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/ca.crt
 
 # # for ccd
 # CORE_PEER_LOCALMSPID=ccd
 # CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/users/Admin@ccd.example.com/msp
+# CORE_PEER_ADDRESS=peer0.ccd.example.com:9051
+# CORE_PEER_TLS_ENABLED=true
+# CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/server.crt
+# CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/server.key
+# CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/ca.crt
 
 # # for users
 # CORE_PEER_LOCALMSPID=users
 # CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp
+# CORE_PEER_ADDRESS=peer0.users.example.com:11051
+# CORE_PEER_TLS_ENABLED=true
+# CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/server.crt
+# CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/server.key
+# CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/ca.crt
+
+
+# docker exec \
+#   -e CORE_PEER_LOCALMSPID=airport \
+#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/airport.example.com/users/Admin@airport.example.com/msp \
+#   cli \
+#   peer chaincode query \
+#   	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
+#   	-C mychannel \
+#   	-n testv7 \
+#   	-c '{"function":"getHistoryForPerson","Args":["user_01"]}'
+
+# docker exec \
+#   -e CORE_PEER_LOCALMSPID=users \
+#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp \
+#   cli \
+# 	peer chaincode invoke \
+# 	  	-o orderer.example.com:7050 \
+# 	  	-C mychannel \
+# 	  	-n testv7 \
+# 	  	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
+# 	  	-c '{"function":"deletePerson","Args":["user_01"]}' \
+# 	  	--peerAddresses peer0.airport.example.com:7051 \
+# 	  	--peerAddresses peer0.users.example.com:11051 \
+# 	  	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/ca.crt \
+# 	  	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/ca.crt
+# peer chaincode list --installed
+
+# docker exec \
+#   -e CORE_PEER_LOCALMSPID=users \
+#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/users.example.com/users/Admin@users.example.com/msp \
+#   cli \
+# 	peer chaincode invoke \
+# 	  	-o orderer.example.com:7050 \
+# 	  	-C mychannel \
+# 	  	-n testv7 \
+# 	  	--tls $CORE_PEER_TLS_ENABLED --cafile $ORDERER_CA \
+# 	  	-c '{"function":"giveConsent","Args":["user_01", "low"]}' \
+# 	  	--peerAddresses peer0.airport.example.com:7051 \
+# 	  	--peerAddresses peer0.users.example.com:11051 \
+# 	  	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/airport.example.com/peers/peer0.airport.example.com/tls/ca.crt \
+# 	  	--tlsRootCertFiles ${CONFIG_ROOT}/crypto/peerOrganizations/users.example.com/peers/peer0.users.example.com/tls/ca.crt
+
+
+# docker exec \
+#   -e CORE_PEER_LOCALMSPID=ccd \
+#   -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/users/Admin@ccd.example.com/msp \
+#   -e CORE_PEER_ADDRESS=peer0.ccd.example.com:9051 \
+#   -e CORE_PEER_TLS_ENABLED=true \
+#   -e CORE_PEER_TLS_CERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/server.crt \
+#   -e CORE_PEER_TLS_KEY_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/server.key \
+#   -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/ccd.example.com/peers/peer0.ccd.example.com/tls/ca.crt \
+#   cli \
+#   peer chaincode list --instantiated -C mychannel

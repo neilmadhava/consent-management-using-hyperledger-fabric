@@ -119,7 +119,6 @@ let Chaincode = class {
       personPrivate.departDate = departDate;
       personPrivate.name = name;
       personPrivate.email = email;
-
     }
     if (consent_type === "high"){
       // ==== Create person object and marshal to JSON ====
@@ -130,8 +129,25 @@ let Chaincode = class {
       personPrivate.email = email;
       personPrivate.phone = phone;
       personPrivate.aadhar_id = aadhar_id;
-
     }
+
+    personState = await stub.getState(userID);
+    if (personState.toString()) {
+      throw new Error('This person with that userID already exists');
+    }
+
+    let personPublic = {};
+    let today = new Date();
+    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    let dateTime = date+' '+time;
+
+    personPublic.userID = userID;
+    personPublic.name = name;
+    personPublic.timeOfAction = dateTime;
+    personPublic.consent_status = consent_type;
+
+    await stub.putState(userID, Buffer.from(JSON.stringify(personPublic)));
 
 
     // === Save person to testCollection ===
@@ -235,6 +251,109 @@ let Chaincode = class {
 
     //remove the person from testCollection
     await stub.deletePrivateData("testCollectionPrivate", userID);
+  }
+
+  // ===================================================
+  // giveConsent - Reinsert a person to ccd collections
+  // ===================================================
+  async giveConsent(stub, args, thisClass) {
+    if (args.length < 2) {
+      throw new Error('Incorrect number of arguments. Expecting username and consent_type')
+    }
+
+    let username = args[0];
+    let newConsent = args[1].toLowerCase();
+    console.info('- start updateConsent ', username, newConsent);
+
+    let personAsBytes = await stub.getPrivateData("testCollection", username);
+    if (!personAsBytes || !personAsBytes.toString()) {
+      throw new Error('person does not exist');
+    }
+
+    let person = {};
+    try {
+      person = JSON.parse(personAsBytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + username;
+      throw new Error(jsonResp);
+    }
+    console.info(person);
+    person.consent_type = newConsent;
+    if (newConsent === "low"){
+      delete person.name;
+      delete person.email;
+      delete person.phone;
+      delete person.aadhar_id;
+      delete person.creditCard;
+    }
+    if (newConsent === "medium"){
+      delete person.phone;
+      delete person.aadhar_id;
+      delete person.creditCard; 
+    }
+    if (newConsent === "high"){
+      delete person.creditCard
+    }
+
+    let personJSONasBytes = Buffer.from(JSON.stringify(person));
+    await stub.putPrivateData("testCollectionPrivate", username, personJSONasBytes); //rewrite person
+
+    console.info('- end transferMarble (success)');
+  }
+
+  async getHistoryForPerson(stub, args, thisClass) {
+
+    if (args.length < 1) {
+      throw new Error('Incorrect number of arguments. Expecting 1')
+    }
+    let username = args[0];
+    console.info('- start getHistoryForPerson: %s\n', username);
+
+    let resultsIterator = await stub.getHistoryForKey(username);
+    let method = thisClass['getAllResults'];
+    let results = await method(resultsIterator, true);
+
+    return Buffer.from(JSON.stringify(results));
+  }
+
+  async getAllResults(iterator, isHistory) {
+    let allResults = [];
+    while (true) {
+      let res = await iterator.next();
+
+      if (res.value && res.value.value.toString()) {
+        let jsonRes = {};
+        console.log(res.value.value.toString('utf8'));
+
+        if (isHistory && isHistory === true) {
+          jsonRes.TxId = res.value.tx_id;
+          jsonRes.Timestamp = res.value.timestamp;
+          jsonRes.IsDelete = res.value.is_delete.toString();
+          try {
+            jsonRes.Value = JSON.parse(res.value.value.toString('utf8'));
+          } catch (err) {
+            console.log(err);
+            jsonRes.Value = res.value.value.toString('utf8');
+          }
+        } else {
+          jsonRes.Key = res.value.key;
+          try {
+            jsonRes.Record = JSON.parse(res.value.value.toString('utf8'));
+          } catch (err) {
+            console.log(err);
+            jsonRes.Record = res.value.value.toString('utf8');
+          }
+        }
+        allResults.push(jsonRes);
+      }
+      if (res.done) {
+        console.log('end of data');
+        await iterator.close();
+        console.info(allResults);
+        return allResults;
+      }
+    }
   }
 
 };
