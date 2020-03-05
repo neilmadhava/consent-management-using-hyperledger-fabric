@@ -251,6 +251,28 @@ let Chaincode = class {
 
     //remove the person from testCollection
     await stub.deletePrivateData("testCollectionPrivate", userID);
+
+    let personAsBytes = await stub.getState(userID);
+    if (!personAsBytes || !personAsBytes.toString()) {
+      throw new Error('person does not exist');
+    }
+    let personPublic = {};
+    try {
+      personPublic = JSON.parse(personAsBytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + userID;
+      throw new Error(jsonResp);
+    }
+    let today = new Date();
+    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    let dateTime = date+' '+time;
+    personPublic.timeOfAction = dateTime;
+    personPublic.consent_status = "revoked consent from ccd";
+
+    let personJSONasBytes = Buffer.from(JSON.stringify(personPublic));
+    await stub.putState(userID, personJSONasBytes); //rewrite the person
   }
 
   // ===================================================
