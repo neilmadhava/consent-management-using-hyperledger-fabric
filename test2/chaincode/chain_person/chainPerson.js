@@ -228,6 +228,35 @@ let Chaincode = class {
 
     //remove the person from testCollection
     await stub.deletePrivateData("testCollection", userID);
+
+    valAsbytes = await stub.getPrivateData("testCollectionPrivate", userID); //get the person from chaincode state
+    jsonResp = {};
+    if (valAsbytes) {
+      //remove the person from testCollectionPrivate
+      await stub.deletePrivateData("testCollectionPrivate", userID);
+    }
+
+    let personAsBytes = await stub.getState(userID);
+    if (!personAsBytes || !personAsBytes.toString()) {
+      throw new Error('person does not exist');
+    }
+    let personPublic = {};
+    try {
+      personPublic = JSON.parse(personAsBytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + userID;
+      throw new Error(jsonResp);
+    }
+    let today = new Date();
+    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    let dateTime = date+' '+time;
+    personPublic.timeOfAction = dateTime;
+    personPublic.consent_status = "deleted data from all records";
+
+    let personJSONasBytes = Buffer.from(JSON.stringify(personPublic));
+    await stub.putState(userID, personJSONasBytes); //rewrite the person
   }
 
   // ===================================================
@@ -321,7 +350,28 @@ let Chaincode = class {
     let personJSONasBytes = Buffer.from(JSON.stringify(person));
     await stub.putPrivateData("testCollectionPrivate", username, personJSONasBytes); //rewrite person
 
-    console.info('- end transferMarble (success)');
+    personAsBytes = await stub.getState(username);
+    if (!personAsBytes || !personAsBytes.toString()) {
+      throw new Error('person does not exist');
+    }
+    let personPublic = {};
+    try {
+      personPublic = JSON.parse(personAsBytes.toString()); //unmarshal
+    } catch (err) {
+      let jsonResp = {};
+      jsonResp.error = 'Failed to decode JSON of: ' + username;
+      throw new Error(jsonResp);
+    }
+    let today = new Date();
+    let date = today.getFullYear()+'-'+(today.getMonth()+1)+'-'+today.getDate();
+    let time = today.getHours() + ":" + today.getMinutes() + ":" + today.getSeconds();
+    let dateTime = date+' '+time;
+    personPublic.timeOfAction = dateTime;
+    personPublic.consent_status = "updated consent for ccd to : " + newConsent;
+
+    personJSONasBytes = Buffer.from(JSON.stringify(personPublic));
+    await stub.putState(username, personJSONasBytes); //rewrite the person
+
   }
 
   async getHistoryForPerson(stub, args, thisClass) {
