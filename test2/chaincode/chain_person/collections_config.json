@@ -6,8 +6,15 @@
     "blockToLive":1000000
   },
   {
-    "name": "testCollectionPrivate",
+    "name": "testCollectionCCD",
     "policy": "OR ('ccd.member', 'airport.member','users.member')",
+    "requiredPeerCount": 1,
+    "maxPeerCount": 3,
+    "blockToLive": 5
+  },
+  {
+    "name": "testCollectionMCD",
+    "policy": "OR ('mcd.member', 'airport.member','users.member')",
     "requiredPeerCount": 1,
     "maxPeerCount": 3,
     "blockToLive": 5

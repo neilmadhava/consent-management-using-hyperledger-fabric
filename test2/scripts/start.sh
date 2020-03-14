@@ -20,8 +20,8 @@ if [ "$?" -ne 0 ]; then
 	exit 1
 fi
 
-export BYFN_CA1_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/airport.example.com/ca && ls *_sk)
-export BYFN_CA2_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/ccd.example.com/ca && ls *_sk)
+# export BYFN_CA1_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/airport.example.com/ca && ls *_sk)
+# export BYFN_CA2_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/ccd.example.com/ca && ls *_sk)
 # export CONSENT_CA3_PRIVATE_KEY=$(cd crypto-config/peerOrganizations/users.example.com/ca && ls *_sk)
 
 
@@ -41,10 +41,10 @@ fi
 echo "#################################################################"
 echo "### Generating channel configuration transaction 'channel.tx' ###"
 echo "#################################################################"
-echo + configtxgen -profile ACUChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID $CHANNEL_NAME
+echo + configtxgen -profile ACUMChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID $CHANNEL_NAME
 
 
-configtxgen -profile ACUChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID $CHANNEL_NAME
+configtxgen -profile ACUMChannel -outputCreateChannelTx ./channel-artifacts/channel.tx -channelID $CHANNEL_NAME
 
 if [ "$?" -ne 0 ]; then
 	echo "Failed to generate channel configuration transaction..."
@@ -55,9 +55,9 @@ fi
 echo "#################################################################"
 echo "#######    Generating anchor peer update for airport   ##########"
 echo "#################################################################"
-echo + configtxgen -profile ACUChannel -outputAnchorPeersUpdate ./channel-artifacts/airportanchors.tx -channelID $CHANNEL_NAME -asOrg airport
+echo + configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/airportanchors.tx -channelID $CHANNEL_NAME -asOrg airport
 
-configtxgen -profile ACUChannel -outputAnchorPeersUpdate ./channel-artifacts/airportanchors.tx -channelID $CHANNEL_NAME -asOrg airport
+configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/airportanchors.tx -channelID $CHANNEL_NAME -asOrg airport
 if [ "$?" -ne 0 ]; then
 	echo "Failed to generate anchor peer update for CCD..."
 	exit 1
@@ -68,9 +68,9 @@ echo
 echo "#################################################################"
 echo "#######    Generating anchor peer update for ccd       ##########"
 echo "#################################################################"
-echo + configtxgen -profile ACUChannel -outputAnchorPeersUpdate ./channel-artifacts/ccdanchors.tx -channelID $CHANNEL_NAME -asOrg ccd
+echo + configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/ccdanchors.tx -channelID $CHANNEL_NAME -asOrg ccd
 
-configtxgen -profile ACUChannel -outputAnchorPeersUpdate ./channel-artifacts/ccdanchors.tx -channelID $CHANNEL_NAME -asOrg ccd
+configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/ccdanchors.tx -channelID $CHANNEL_NAME -asOrg ccd
 
 if [ "$?" -ne 0 ]; then
 	echo "Failed to generate anchor peer update for Airport..."
@@ -82,13 +82,27 @@ echo
 echo "#################################################################"
 echo "#######    Generating anchor peer update for users     ##########"
 echo "#################################################################"
-echo + configtxgen -profile ACUChannel -outputAnchorPeersUpdate ./channel-artifacts/usersanchors.tx -channelID $CHANNEL_NAME -asOrg users
+echo + configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/usersanchors.tx -channelID $CHANNEL_NAME -asOrg users
 
-configtxgen -profile ACUChannel -outputAnchorPeersUpdate ./channel-artifacts/usersanchors.tx -channelID $CHANNEL_NAME -asOrg users
+configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/usersanchors.tx -channelID $CHANNEL_NAME -asOrg users
 
 if [ "$?" -ne 0 ]; then
 	echo "Failed to generate anchor peer update for Airport..."
 	exit 1
 fi
 
-./scripts/ccp-generate.sh
+# generate anchor peer transaction
+echo
+echo "#################################################################"
+echo "#######    Generating anchor peer update for mcd     ##########"
+echo "#################################################################"
+echo + configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/mcdanchors.tx -channelID $CHANNEL_NAME -asOrg mcd
+
+configtxgen -profile ACUMChannel -outputAnchorPeersUpdate ./channel-artifacts/mcdanchors.tx -channelID $CHANNEL_NAME -asOrg mcd
+
+if [ "$?" -ne 0 ]; then
+	echo "Failed to generate anchor peer update for Airport..."
+	exit 1
+fi
+
+# ./scripts/ccp-generate.sh

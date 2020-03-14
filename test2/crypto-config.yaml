@@ -18,10 +18,6 @@ OrdererOrgs:
     # ---------------------------------------------------------------------------
     Specs:
       - Hostname: orderer
-      - Hostname: orderer2
-      - Hostname: orderer3
-      - Hostname: orderer4
-      - Hostname: orderer5
 
 # ---------------------------------------------------------------------------
 # "PeerOrgs" - Definition of organizations managing peer nodes
@@ -52,6 +48,16 @@ PeerOrgs:
   # ---------------------------------------------------------------------------
   - Name: users
     Domain: users.example.com
+    EnableNodeOUs: true
+    Template:
+      Count: 2
+    Users:
+      Count: 1
+  # ---------------------------------------------------------------------------
+  # MCD
+  # ---------------------------------------------------------------------------
+  - Name: mcd
+    Domain: mcd.example.com
     EnableNodeOUs: true
     Template:
       Count: 2

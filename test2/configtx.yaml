@@ -135,6 +135,37 @@ Organizations:
             - Host: peer0.users.example.com
               Port: 11051
 
+    - &mcd
+        # DefaultOrg defines the organization which is used in the sampleconfig
+        # of the fabric.git development environment
+        Name: mcd
+
+        # ID to load the MSP definition as
+        ID: mcd
+
+        MSPDir: crypto-config/peerOrganizations/mcd.example.com/msp
+
+        # Policies defines the set of policies at this level of the config tree
+        # For organization policies, their canonical path is usually
+        #   /Channel/<Application|Orderer>/<OrgName>/<PolicyName>
+        Policies:
+            Readers:
+                Type: Signature
+                Rule: "OR('mcd.admin', 'mcd.peer', 'mcd.client')"
+            Writers:
+                Type: Signature
+                Rule: "OR('mcd.admin', 'mcd.client')"
+            Admins:
+                Type: Signature
+                Rule: "OR('mcd.admin')"
+
+        AnchorPeers:
+            # AnchorPeers defines the location of peers which can be used
+            # for cross org gossip communication.  Note, this value is only
+            # encoded in the genesis block in the Application section context
+            - Host: peer0.mcd.example.com
+              Port: 13051
+
 ################################################################################
 #
 #   SECTION: Capabilities
@@ -271,41 +302,6 @@ Orderer: &OrdererDefaults
         # max bytes will result in a batch larger than preferred max bytes.
         PreferredMaxBytes: 512 KB
 
-    Kafka:
-        # Brokers: A list of Kafka brokers to which the orderer connects
-        # NOTE: Use IP:port notation
-        Brokers:
-            - 127.0.0.1:9092
-
-    # EtcdRaft defines configuration which must be set when the "etcdraft"
-    # orderertype is chosen.
-    EtcdRaft:
-        # The set of Raft replicas for this network. For the etcd/raft-based
-        # implementation, we expect every replica to also be an OSN. Therefore,
-        # a subset of the host:port items enumerated in this list should be
-        # replicated under the Orderer.Addresses key above.
-        Consenters:
-            - Host: orderer.example.com
-              Port: 7050
-              ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
-              ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer.example.com/tls/server.crt
-            - Host: orderer2.example.com
-              Port: 7050
-              ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer2.example.com/tls/server.crt
-              ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer2.example.com/tls/server.crt
-            - Host: orderer3.example.com
-              Port: 7050
-              ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer3.example.com/tls/server.crt
-              ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer3.example.com/tls/server.crt
-            - Host: orderer4.example.com
-              Port: 7050
-              ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer4.example.com/tls/server.crt
-              ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer4.example.com/tls/server.crt
-            - Host: orderer5.example.com
-              Port: 7050
-              ClientTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer5.example.com/tls/server.crt
-              ServerTLSCert: crypto-config/ordererOrganizations/example.com/orderers/orderer5.example.com/tls/server.crt
-
     # Organizations is the list of orgs which are defined as participants on
     # the orderer side of the network
     Organizations:
@@ -380,29 +376,15 @@ Profiles:
             Capabilities:
                 <<: *OrdererCapabilities
         Consortiums:
-            AirportCCDConsortium:
-                Organizations:
-                    - *airport
-                    - *ccd
-            ACUConsortium:
+            ACUMConsortium:
                 Organizations:
                     - *airport
                     - *ccd
                     - *users
-    
-    AirCCDChannel:
-        Consortium: AirportCCDConsortium
-        <<: *ChannelDefaults
-        Application:
-            <<: *ApplicationDefaults
-            Organizations:
-                - *airport
-                - *ccd
-            Capabilities:
-                <<: *ApplicationCapabilities
+                    - *mcd
 
-    ACUChannel:
-        Consortium: ACUConsortium
+    ACUMChannel:
+        Consortium: ACUMConsortium
         <<: *ChannelDefaults
         Application:
             <<: *ApplicationDefaults
@@ -410,5 +392,6 @@ Profiles:
                 - *airport
                 - *ccd
                 - *users
+                - *mcd
             Capabilities:
                 <<: *ApplicationCapabilities

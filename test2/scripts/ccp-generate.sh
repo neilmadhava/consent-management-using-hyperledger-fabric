@@ -55,3 +55,13 @@ CAPEM=crypto-config/peerOrganizations/users.example.com/ca/ca.users.example.com-
 
 echo "$(json_ccp $ORG $P0PORT $P1PORT $CAPORT $PEERPEM $CAPEM)" > ./scripts/connection-users.json
 echo "$(yaml_ccp $ORG $P0PORT $P1PORT $CAPORT $PEERPEM $CAPEM)" > ./scripts/connection-users.yaml
+
+ORG=mcd
+P0PORT=13051
+P1PORT=14051
+CAPORT=10054
+PEERPEM=crypto-config/peerOrganizations/mcd.example.com/tlsca/tlsca.mcd.example.com-cert.pem
+CAPEM=crypto-config/peerOrganizations/mcd.example.com/ca/ca.mcd.example.com-cert.pem
+
+echo "$(json_ccp $ORG $P0PORT $P1PORT $CAPORT $PEERPEM $CAPEM)" > ./scripts/connection-mcd.json
+echo "$(yaml_ccp $ORG $P0PORT $P1PORT $CAPORT $PEERPEM $CAPEM)" > ./scripts/connection-mcd.yaml
